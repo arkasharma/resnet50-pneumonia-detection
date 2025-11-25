@@ -22,12 +22,7 @@ To address the dataset's characteristics and prepare it for model training:
 2.  **Image Resizing**: All images were resized to (224, 224) to match the input requirements of the ResNet50 model.
 3.  **Color Mode Conversion**: Grayscale X-ray images were converted to 3-channel RGB to align with ResNet50's expected input.
 4.  **Normalization**: Pixel values were rescaled using `preprocess_input` (ImageNet normalization) to match the distribution of images ResNet50 was originally trained on.
-5.  **Data Augmentation**: `ImageDataGenerator` was used for augmentation during training to improve generalization. Applied augmentations include:
-    -   `rotation_range=15`
-    -   `width_shift_range=0.1`
-    -   `height_shift_range=0.1`
-    -   `zoom_range=0.1`
-    -   `horizontal_flip=False` (due to anatomical considerations)
+5.  **Data Augmentation**: `ImageDataGenerator` was used for augmentation during training to improve generalization.
 6.  **Class Weights**: Class weights were computed using `sklearn.utils.class_weight.compute_class_weight` to counteract the class imbalance during training.
 
 **Final Data Splits (after preprocessing and train/validation split from augmented training data):**
@@ -41,16 +36,9 @@ To address the dataset's characteristics and prepare it for model training:
 
 1.  **Base Model**: ResNet50, pre-trained on ImageNet, was used as the feature extractor. The top (classification) layer was excluded (`include_top=False`).
 2.  **Frozen Layers**: Initially, all layers of the `ResNet50` base model were frozen (`layer.trainable = False`) to leverage pre-learned features and reduce computational cost.
-3.  **Custom Classification Head**: A new classification head was added on top of the frozen `ResNet50` base:
-    -   `GlobalAveragePooling2D()`: To reduce spatial dimensions and parameters.
-    -   `Dense(128, activation='relu')`: A fully connected layer with ReLU activation.
-    -   `Dropout(0.5)`: For regularization to prevent overfitting.
-    -   `Dense(1, activation='sigmoid')`: Output layer for binary classification.
-4.  **Compilation**: The model was compiled with:
-    -   `Optimizer`: Adam with `learning_rate=1e-4`.
-    -   `Loss Function`: `binary_crossentropy`.
-    -   `Metrics`: `accuracy`, `Precision`, `Recall`.
-5.  **Callbacks**: `ModelCheckpoint` (to save the best model based on `val_accuracy`) and `EarlyStopping` (with `patience=3` on `val_loss`) were used during training.
+3.  **Custom Classification Head**: A new classification head was added on top of the frozen `ResNet50` base.
+4.  **Compilation**: The model was compiled with Adam (`learning_rate=1e-4`), `binary_crossentropy` loss, and metrics `accuracy`, `Precision`, `Recall`.
+5.  **Callbacks**: `ModelCheckpoint` and `EarlyStopping` were used during training.
 
 ### Baseline Evaluation Results (on Test Set)
 -   **Accuracy**: 0.8974
@@ -75,13 +63,6 @@ A multi-dimensional hyperparameter search was performed to optimize the model fu
 4.  **Dropout Rate**: Different dropout rates in the classification head.
 5.  **L2 Regularization**: Introduction of L2 regularization in the dense layers.
 
-**Observations from Fine-Tuning:**
--   **Unfreeze Depth**: Unfreezing 10 layers showed the best balance, improving validation F1 score and accuracy compared to 5 or 30 layers.
--   **Learning Rate**: A learning rate of `1e-4` was optimal. Higher rates led to unstable training, and lower rates failed to meaningfully update weights.
--   **Optimizer**: Adam consistently outperformed SGD with momentum.
--   **Dropout**: A dropout rate of `0.3` proved to be slightly better than `0.0` or `0.5` in preventing overfitting and maintaining good performance.
--   **L2 Regularization**: An L2 value of `0.01` showed marginal improvements in regularization compared to no L2 or a higher value of `0.1`.
-
 ## Final Model Configuration
 Based on the fine-tuning experiments, the optimal configuration for the final model was:
 -   **Unfreeze Layers**: Last 10 layers of ResNet50.
@@ -101,9 +82,6 @@ Based on the fine-tuning experiments, the optimal configuration for the final mo
      [ 20 370]]
     ```
 
-## Conclusion
-While the baseline model achieved strong results, fine-tuning with specific hyperparameters led to a slight improvement in overall performance metrics, particularly the F1 score and accuracy on the test set. The chosen fine-tuned model demonstrates a good balance between identifying positive cases (high recall) and minimizing false positives (good precision), making it a potentially valuable tool for pneumonia detection. However, the gains from fine-tuning were not as substantial as initially expected, which might be attributed to the relatively small and imbalanced nature of the dataset. For such datasets, a well-configured frozen pretrained model can sometimes generalize effectively, and aggressive fine-tuning might lead to overfitting.
-
 ## How to Run the Project
 1.  **Clone the Repository**:
     ```bash
@@ -117,7 +95,6 @@ While the baseline model achieved strong results, fine-tuning with specific hype
     source venv/bin/activate  # On Windows use `venv\Scripts\activate`
     pip install -r requirements.txt
     ```
-    (Note: You might need to generate a `requirements.txt` file from the notebook's imports).
 3.  **Mount Google Drive (if using Colab)**:
     The notebook assumes data and model checkpoints are stored in Google Drive. Ensure your `BASE_DIR` points to the correct location of your `chest_xray` dataset on Google Drive.
     ```python
