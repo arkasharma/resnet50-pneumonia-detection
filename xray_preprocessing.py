@@ -9,17 +9,17 @@ Original file is located at
 # Prolog (Imports, setting up)
 """
 
-!pip install numpy
-!pip install matplotlib
-!pip install pillow
-!pip install seaborn
-!pip install scikit-learn
-!pip install tensorflow
-!pip install tensorflow-datasets
-!pip install tensorflow-addons
-!pip install tqdm
-!pip install pandas
-!pip install opencv-python
+# !pip install numpy
+# !pip install matplotlib
+# !pip install pillow
+# !pip install seaborn
+# !pip install scikit-learn
+# !pip install tensorflow
+# !pip install tensorflow-datasets
+# !pip install tensorflow-addons
+# !pip install tqdm
+# !pip install pandas
+# !pip install opencv-python
 
 
 
@@ -58,11 +58,7 @@ from tensorflow.keras.optimizers import SGD
 
 from sklearn.metrics import classification_report, confusion_matrix, accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
-!cat /proc/meminfo
-
 drive.mount('/content/drive')
-
-# BASE_DIR = "/Users/maiasalti/Downloads/chest_xray/chest_xray"
 
 BASE_DIR = '/content/drive/MyDrive/Math_156_Project/chest_xray'
 print(os.listdir(BASE_DIR))
@@ -223,22 +219,10 @@ def compute_avg_intensity(folder_path):
 normal_brightness = compute_avg_intensity(normal_train_dir)
 pneumonia_brightness = compute_avg_intensity(pneumonia_train_dir)
 
-# Counts version of the histogram
-# plt.figure(figsize=(8,5))
-# plt.hist(normal_brightness, bins=40, alpha=0.7, color='green', label='Normal')
-# plt.hist(pneumonia_brightness, bins=40, alpha=0.7, color='red', label='Pneumonia')
-# plt.title('Brightness Distribution by Class', fontsize=13)
-# plt.xlabel('Average Pixel Intensity (0–255)')
-# plt.ylabel('Number of Images')
-# plt.legend()
-# plt.grid(alpha=0.3)
-# plt.show()
-
 # Normalized version
 plt.figure(figsize=(8,5))
 plt.hist(normal_brightness, bins=40, alpha=0.7, color='green', label='Normal', density=True)
 plt.hist(pneumonia_brightness, bins=40, alpha=0.7, color='red', label='Pneumonia', density=True)
-plt.title('Brightness Distribution by Class (Normalized)', fontsize=13, fontweight='bold')
 plt.xlabel('Average Pixel Intensity (0–255)')
 plt.ylabel('Density (Proportion of Images)')
 plt.legend()
@@ -262,24 +246,12 @@ def compute_contrast(folder_path):
 normal_contrast = compute_contrast(normal_train_dir)
 pneumonia_contrast = compute_contrast(pneumonia_train_dir)
 
-# Counts version of teh histogram
-# plt.figure(figsize=(8,5))
-# plt.hist(normal_contrast, bins=40, alpha=0.7, color='green', label='Normal')
-# plt.hist(pneumonia_contrast, bins=40, alpha=0.7, color='red', label='Pneumonia')
-# plt.title('Image Contrast Distribution by Class', fontsize=13, fontweight='bold')
-# plt.xlabel('Pixel Intensity Variance')
-# plt.ylabel('Number of Images')
-# plt.legend()
-# plt.grid(alpha=0.3)
-# plt.show()
-
 # Normalized version
 plt.figure(figsize=(8,5))
 
 plt.hist(normal_contrast, bins=40, alpha=0.7, color='green', label='Normal', density=True)
 plt.hist(pneumonia_contrast, bins=40, alpha=0.7, color='red', label='Pneumonia', density=True)
 
-plt.title('Image Contrast Distribution by Class (Normalized)', fontsize=13, fontweight='bold')
 plt.xlabel('Pixel Intensity Variance (Contrast Measure)')
 plt.ylabel('Density (Proportion of Images)')
 plt.legend()
@@ -290,7 +262,7 @@ plt.show()
 
 # Data preprocessing
 
-Primarily, the first issue that arises is that currently, the validation set only has 16 samples. This is extremely small, which would lead to noisy outcomes, impacting our undrestanding of a proper, generalizable model. Our solution to this is to primarily, merge the validation data back into training, and then use cross-validation. **Later: add in # of folds we use, and how it was impacted by runtime**
+Primarily, the first issue that arises is that currently, the validation set only has 16 samples. This is extremely small, which would lead to noisy outcomes, impacting our undrestanding of a proper, generalizable model. Our solution to this is to primarily, merge the validation data back into training, and then use a validation set.
 """
 
 train_dir = os.path.join(BASE_DIR, "train")
@@ -328,18 +300,16 @@ train_datagen = ImageDataGenerator(
 
 test_datagen = ImageDataGenerator(preprocessing_function=preprocess_input)
 
+"""We create train and validation generators, meaning they automatically load the images we specified from our folders, apply necessary preprocessing and augmentation, batch them, and feed them to the model during training.
+
+The training generator includes augmentation, whereas the validation does not (and the validation data is taken randomly from the same train directory).
+
+"""
+
 # data generators
 
 IMG_SIZE = (224, 224)
 BATCH_SIZE = 32
-
-# train_generator = train_datagen.flow_from_directory(
-#     os.path.join(BASE_DIR, 'train'),
-#     target_size = IMG_SIZE,
-#     batch_size = BATCH_SIZE,
-#     class_mode = 'binary',
-#     color_mode = 'rgb',
-#     shuffle=True)
 
 train_generator = train_datagen.flow_from_directory(
     os.path.join(BASE_DIR, 'train'),
@@ -393,45 +363,6 @@ print_dataset_stats(train_generator, "Train Set")
 print_dataset_stats(val_generator, "Validation Set")
 print_dataset_stats(test_generator, "Test Set")
 
-# IF NECESSARY: Additional Augmented Normal photos added in in a bootstrap-like manner
-
-# Paths
-# normal_dir = os.path.join(BASE_DIR, 'train', 'NORMAL')
-# augmented_dir = os.path.join(BASE_DIR, 'train', 'NORMAL_AUGMENTED')
-
-# # Create a temporary folder for augmented copies
-# os.makedirs(augmented_dir, exist_ok=True)
-
-# # Define light augmentation
-# augmenter = ImageDataGenerator(
-#     rotation_range=15,
-#     zoom_range=0.1,
-#     width_shift_range=0.1,
-#     height_shift_range=0.1,
-# )
-
-# # Randomly choose some Normal images to augment
-# num_to_augment = 500   # change if you want more or fewer
-# sample_images = random.sample(os.listdir(normal_dir), min(num_to_augment, len(os.listdir(normal_dir))))
-
-# for img_name in sample_images:
-#     img_path = os.path.join(normal_dir, img_name)
-#     img = load_img(img_path)
-#     x = img_to_array(img)
-#     x = np.expand_dims(x, axis=0)
-
-#     # generate one augmented image per original
-#     for batch in augmenter.flow(x, batch_size=1, save_to_dir=augmented_dir,
-#                                 save_prefix='aug', save_format='jpeg'):
-#         break
-
-# # Move augmented images back into NORMAL folder
-# for img in os.listdir(augmented_dir):
-#     shutil.move(os.path.join(augmented_dir, img), os.path.join(normal_dir, img))
-
-# # Remove the temporary augmented directory (optional cleanup)
-# os.rmdir(augmented_dir)
-
 # Class weights - which we will use in creating the next baseline step
 
 
@@ -465,10 +396,10 @@ print(f"Number of layers in base model: {len(base_model.layers)}")
 """Now, we are going to create our neural network base. We first use GlobalAveragePooling in order to reduce the number of parameters (by collapsing spatial dimensions) and thus decrease the risk of overfitting. This also helps the model capture lung-wide features rather than focusing only on very specific regions. We then add a fully connected layer with 128 neurons and apply a ReLU activation to introduce non-linearity (allowing the model to learn more complex decision boundaries). Incorporating dropout also allows us to further improve our generalization by randomly disabling some neurons during training. We add a sigmoid output, which is necessary for binary classification because it produces a probability between 0 and 1 (representing the likelihood of having pneumonia). Lastly, we create our neural entwork by connecting the inputs of ResNet50 to our new classification head"""
 
 x = base_model.output
-x = GlobalAveragePooling2D()(x)   # reduces spatial dims
+x = GlobalAveragePooling2D()(x) # reduces spatial dims
 x = Dense(128, activation='relu')(x)
-x = Dropout(0.5)(x)               # regularization
-output = Dense(1, activation='sigmoid')(x)  # binary classification
+x = Dropout(0.5)(x) # regularization
+output = Dense(1, activation='sigmoid')(x) # binary classification
 
 
 # creates the full neural network - connects input of ResNet50 to new classification head
@@ -498,32 +429,6 @@ checkpoint = ModelCheckpoint(
 
 early_stop = EarlyStopping(monitor='val_loss', patience=3, restore_best_weights=True, verbose=1)
 
-"""We create train and validation generators, meaning they automatically load the images we specified from our folders, apply necessary preprocessing and augmentation, batch them, and feed them to the model during training.
-
-The training generator includes augmentation, whereas the validation does not (and the validation data is taken randomly from the same train directory).
-
-"""
-
-# train_generator = train_datagen.flow_from_directory(
-#     os.path.join(BASE_DIR, 'train'),
-#     target_size=IMG_SIZE,
-#     batch_size=BATCH_SIZE,
-#     class_mode='binary',
-#     color_mode='rgb',
-#     shuffle=True,
-#     subset='training'
-# )
-
-# val_generator = train_datagen.flow_from_directory(
-#     os.path.join(BASE_DIR, 'train'),
-#     target_size=IMG_SIZE,
-#     batch_size=BATCH_SIZE,
-#     class_mode='binary',
-#     color_mode='rgb',
-#     shuffle=True,
-#     subset='validation'
-# )
-
 """Here, we are training our baseline model. Only the new classification head is updated, while all ResNet50 layers remain frozen (as we specified above). The model learns to map the pretrained features to our distinct pneumonia and normal labels, and class weights help correct for our large imbalance of classes. Early stopping and checkpoints, as we declared above, help us save the best-performing version by monitoring validation performance as training runs for up to 15 epochs."""
 
 EPOCHS = 10
@@ -544,7 +449,7 @@ print(f"Test Accuracy: {test_acc:.4f}")
 print(f"Test Precision: {test_prec:.4f}")
 print(f"Test Recall: {test_rec:.4f}")
 
-# Shawn: Added in f1 score, confusion matrix to baseline evaluation
+# Added in f1 score, confusion matrix to baseline evaluation
 
 # Reset generator (important to avoid ordering issues)
 test_generator.reset()
@@ -574,15 +479,11 @@ plt.ylabel('Actual')
 plt.xlabel('Predicted')
 plt.show()
 
-"""**FIX THIS PARAGARPH BASED ON ABOVE RESULTS**
-
-Overall, we can see that the baseline model did extremely well. The number of false positives and false negatives is relatively similar, but the recall of 0.94 and the strong F1 score show that the model is especially effective at correctly identifying pneumonia cases. This is very important in a medical context, since missing a pneumonia case (a false negative) is generally more harmful than incorrectly flagging a normal image. So, despite having frozen layers for a baseline, the model already demonstrates strong generalization. We have to note that our data is on the smaller end and as such, the baseline results may not fully be representative of how the model would perform on a larger population.
+"""Overall, we can see that the baseline model did extremely well. Although there were many more false positives, the recall of 0.95 and the strong F1 score show that the model is especially effective at correctly identifying pneumonia cases. This is very important in a medical context, since missing a pneumonia case (a false negative) is generally more harmful than incorrectly flagging a normal image. So, despite having frozen layers for a baseline, the model already demonstrates strong generalization. We have to note that our data is on the smaller end and as such, the baseline results may not fully be representative of how the model would perform on a larger population.
 
 ## Fine Tuning
 
 Rather than tuning one hyperparameter at a time, we used a multi-dimensional (parallel) search. We first defined a small set of sensible values for each hyperparameter category (such as number of layers we unfreeze, learning rate, optimizer, regularization strength/dropout incoproration). Instead of testing every possible combination, we selected a curated subset of meaningful configurations based on deep learning best practices. This allowed us to jointly vary multiple hyperparameters at once while keeping the search computationally efficient and manageable. Our goal is to explore interactions between tuning decisions without performing a full exhaustive grid search.
-
-Talk about how we also added early stopping for computational and other reasons
 """
 
 # Helper functions
@@ -729,10 +630,7 @@ baseline_model = load_baseline()
 
 baseline_model.summary()
 
-"""** ADD GRAPHS LATER BASED ON BIGGEST DIFFERENCE OF RESULTS **
-
-Stage 1: Choosing depth (how many layers is best to unfreeze and relearn for test accuracy)?
-"""
+"""Stage 1: Choosing depth (how many layers is best to unfreeze and relearn for test accuracy)?"""
 
 UNFREEZE_OPTIONS = [5, 10, 30]
 
@@ -787,34 +685,33 @@ print(f"F1 Score: {f1:.4f}")
 print("Confusion Matrix:")
 print(cm)
 
-# Confusion matrices
-cm_baseline = np.array([[263, 6],
-                        [41, 735]])
+# Graph of all on validation data
 
-cm_5 = np.array([[261, 8],
-                 [31, 745]])
+labels = ["Baseline", "Depth 5", "Depth 10", "Depth 30"]
+val_acc = [0.9388, 0.9646, 0.9827751, 0.9799043]
+f1 = [0.9577, 0.9757377, 0.98828125, 0.98642534]
+recall = [0.9343, 0.9588, 0.9781, 0.9832]  # metric with largest variation
 
-cm_10 = np.array([[261, 8],
-                  [13, 763]])
+df = pd.DataFrame({
+    "Model": labels,
+    "Validation Accuracy": val_acc,
+    "F1-Score": f1,
+    "Recall": recall
+})
 
-cm_30 = np.array([[251, 18],
-                  [5, 771]])
+# Melt for seaborn
+df_melt = df.melt(id_vars="Model", var_name="Metric", value_name="Value")
 
-cms = [cm_baseline, cm_5, cm_10, cm_30]
-titles = ["Baseline", "Unfreeze 5 Layers", "Unfreeze 10 Layers", "Unfreeze 30 Layers"]
-
-fig, axes = plt.subplots(1, 4, figsize=(20, 4))
-
-for ax, cm, title in zip(axes, cms, titles):
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
-    ax.set_title(title)
-    ax.set_xlabel("Predicted")
-    ax.set_ylabel("Actual")
-
+sns.barplot(data=df_melt, x="Metric", y="Value", hue="Model")
+plt.ylim(0.85, 1)
+plt.legend(loc='lower right')
 plt.tight_layout()
 plt.show()
 
-"""Stage 2: Learning Rate"""
+"""We can easily see that depth 10 does better on all categories except recall.
+
+Stage 2: Learning Rate
+"""
 
 # Fix based on results
 BEST_DEPTH = 10   # update after Phase 1
@@ -841,25 +738,31 @@ for lr in LR_OPTIONS:
 
 results_phase2
 
-"""Out of the chosen learning rates, 1e-4 was the optimal fine-tuning learning rate. A larger learning rate of 1e-3 caused the model to predict the pneumonia class for all images, achieving perfect recall but zero ability to identify normal cases. This shows that it doesn't have discriminative power. On the other hand, a much smaller learning rate rate of 1e-6 failed to update the backbone meaningfully, which lead to very poor accuracy and extremely low recal (showing the model was underfitting). The learning rate of 1e-4 provided the best balance, maintaining stable training while improving the model’s ability to correctly identify both classes."""
+"""Out of the chosen learning rates, 1e-4 was the optimal fine-tuning learning rate. A much smaller learning rate rate of 1e-6 failed to update the backbone meaningfully, which lead to very poor accuracy and extremely low recall (showing the model was underfitting). The learning rate of 1e-4 provided the best balance, maintaining stable training while improving the model’s ability to correctly identify both classes."""
 
 # graph
-data_lr = pd.DataFrame({
-    "Learning Rate": ["1e-3", "1e-4", "1e-6"],
-    "F1 Score": [0.981675, 0.982387, 0.972332],
-    "Accuracy": [0.9732057416267943, 0.9741626794258373, 0.959808612440191]
+learning_rates = ["0.001", "0.0001", "1e-6"]
+accuracy = [0.9598086, 0.9674641, 0.9425837]
+precision = [0.9816273, 0.9946667, 0.9890710]
+recall = [0.9639175, 0.9613402, 0.9329897]
+f1 = [0.9726918, 0.9777195, 0.9602122]
+
+df = pd.DataFrame({
+    "Learning Rate": learning_rates,
+    "Accuracy": accuracy,
+    "Precision": precision,
+    "Recall": recall,
+    "F1-Score": f1
 })
 
-# F1 : bars
-sns.barplot(data=data_lr, x="Learning Rate", y="F1 Score", color="steelblue")
+df_melt = df.melt(id_vars="Learning Rate",
+                  var_name="Metric",
+                  value_name="Value")
 
-# Accuracy: line
-sns.lineplot(data=data_lr, x="Learning Rate", y="Accuracy",
-             marker="o", linewidth=2, color="orange", label=" Validation Accuracy")
-
-plt.ylim(0.94, 1.00)
-plt.title("F1 Score and Accuracy vs Learning Rate (Unfreeze = 10 Layers)")
-plt.legend()
+sns.barplot(data=df_melt, x="Metric", y="Value", hue="Learning Rate")
+plt.ylim(0.85, 1.0)   # to emphasize differences
+plt.legend(loc="lower right")
+plt.tight_layout()
 plt.show()
 
 """Stage 3: Different optimizers"""
@@ -892,33 +795,33 @@ for opt in OPTIMIZER_OPTIONS:
 
 results_phase3
 
-"""SGD momentum was way worse than ADAM - keeping ADAM"""
+"""SGD momentum was worse than ADAM (only slightly better precision), so we are keeping ADAM"""
 
-data_opt = pd.DataFrame({
-    "Optimizer": ["Adam", "SGD (Momentum)"],
-    "F1 Score": [0.986355, 0.970297],
-    "Recall": [0.978093, 0.947165]
-})
+cm_adam = np.array([[248, 21],
+                    [  9, 767]])
 
-data_opt_melt = data_opt.melt(
-    id_vars="Optimizer",
-    value_vars=["F1 Score", "Recall"],
-    var_name="Metric",
-    value_name="Value"
-)
+cm_sgd = np.array([[258, 11],
+                   [ 53, 723]])
 
-sns.barplot(
-    data=data_opt_melt,
-    x="Metric",
-    y="Value",
-    hue="Optimizer"
-)
+fig, axes = plt.subplots(1, 2, figsize=(8, 3))
 
-plt.title("Optimizer Comparison: Adam vs. SGD (Momentum)")
-plt.ylim(0.90, 1.00)
-plt.xlabel("Metric")
-plt.ylabel("Value")
-plt.legend(title="Optimizer")
+sns.heatmap(cm_adam, annot=True, fmt='d', cmap='Blues',
+            xticklabels=["Normal", "Pneumonia"],
+            yticklabels=["Normal", "Pneumonia"],
+            ax=axes[0])
+axes[0].set_title("Adam")
+axes[0].set_xlabel("Predicted")
+axes[0].set_ylabel("Actual")
+
+sns.heatmap(cm_sgd, annot=True, fmt='d', cmap='Blues',
+            xticklabels=["Normal", "Pneumonia"],
+            yticklabels=["Normal", "Pneumonia"],
+            ax=axes[1])
+axes[1].set_title("SGD with Momentum")
+axes[1].set_xlabel("Predicted")
+axes[1].set_ylabel("")
+
+plt.tight_layout()
 plt.show()
 
 """Stage 4: Different dropouts"""
@@ -950,29 +853,32 @@ for dr in DROPOUT_OPTIONS:
 
 results_phase4
 
-""".3: higher f1-score and accuracy"""
+"""0.5: higher accuracy, recall, and F1-score (even if changes are very small), showing we should incorporate it.
 
-cm_00 = np.array([[265, 4],
-                  [24, 752]])
+Interesting note: dropout of 0.3 did significantly worse than no dropout at all, which feels slightly counterintuitive
+"""
 
-cm_03 = np.array([[264, 5],
-                  [23, 753]])
+dropouts = ["0.0", "0.3", "0.5"]
+accuracy = [0.9732057, 0.9693780, 0.9741627]
+precision = [0.9908136, 0.9920635, 0.9819820]
+recall = [0.9729381, 0.9664948, 0.9832474]
+f1 = [0.9817945, 0.9791123, 0.9826143]
 
-cm_05 = np.array([[256, 13],
-                  [14, 762]])
+df = pd.DataFrame({
+    "Dropout": dropouts,
+    "Accuracy": accuracy,
+    "Recall": recall,
+    "F1-Score": f1
+})
 
-cms = [cm_00, cm_03, cm_05]
-titles = ["Dropout = 0.0", "Dropout = 0.3", "Dropout = 0.5"]
+# Melt so metric is on x-axis
+df_melt = df.melt(id_vars="Dropout", var_name="Metric", value_name="Value")
 
-fig, axes = plt.subplots(1, 3, figsize=(15, 4))
-
-for ax, cm, title in zip(axes, cms, titles):
-    sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
-    ax.set_title(title)
-    ax.set_xlabel("Predicted")
-    ax.set_ylabel("Actual")
-
+sns.barplot(data=df_melt, x="Metric", y="Value", hue="Dropout")
+plt.ylim(0.85, 1.0)
+plt.legend(title="Dropout", loc="lower right")
 plt.tight_layout()
+plt.show()
 
 """Stage 5: L2 regularization tuning"""
 
@@ -980,7 +886,7 @@ plt.tight_layout()
 BEST_DEPTH = 10
 BEST_LR = 1e-4
 BEST_OPT = "adam"
-BEST_DROPOUT = 0.3
+BEST_DROPOUT = 0.5
 
 L2_OPTIONS = [0.0, 0.01, 0.1]
 
@@ -1006,10 +912,35 @@ for l2val in L2_OPTIONS:
 
 results_phase5
 
-""".01 was the best
+""".1 was the best - highest validation, most balanced"""
 
-Evaluating chosen model
-"""
+cm_l2_0   = np.array([[241, 28],
+                      [  5, 771]])
+
+cm_l2_01  = np.array([[260,  9],
+                      [ 23, 753]])
+
+cm_l2_1   = np.array([[265,  4],
+                      [ 16, 760]])
+
+cms = [cm_l2_0, cm_l2_01, cm_l2_1]
+titles = ["L2 = 0", "L2 = 0.01", "L2 = 0.1"]
+
+fig, axes = plt.subplots(1, 3, figsize=(12, 3))
+
+for ax, cm, title in zip(axes, cms, titles):
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
+                xticklabels=["Normal", "Pneumonia"],
+                yticklabels=["Normal", "Pneumonia"],
+                ax=ax)
+    ax.set_title(title)
+    ax.set_xlabel("Predicted")
+    ax.set_ylabel("Actual")
+
+plt.tight_layout()
+plt.show()
+
+"""Evaluating chosen model"""
 
 final_model = load_baseline("/content/drive/MyDrive/Math_156_Project/best_resnet_baseline.h5")
 
@@ -1017,8 +948,8 @@ final_config = {
     "unfreeze_layers": 10,
     "learning_rate": 1e-4,
     "optimizer": "adam",
-    "dropout": 0.3,
-    "l2": 0.01
+    "dropout": 0.5,
+    "l2": 0.1
 }
 
 final_model = apply_config(final_model, final_config)
@@ -1078,108 +1009,26 @@ cm = confusion_matrix(y_true, y_pred)
 print("Confusion Matrix:")
 print(cm)
 
-"""<!-- Although fine-tuning, in general, improves CNN performance, our results showed the opposite: the frozen-backbone baseline outperformed our fine-tuned variant. Even after experimenting with unfreezing different depths, learning rates, optimizers, dropout, and L2 regularization, we were unable to get a higher accuracy than the test set. Instead, fine-tuning seemed to have increased overfitting. We can see this by the drop in our preicision, and increasing the amount of false positives we have, despite having extremely high recall. This is most likely due to issues with our dataset. Since our dataset is fairly small and already highly imbalanced, the ImageNet-trained ResNet50 features are often already strong enough to generalize. As such, updating even a few backbone layers can cause the network to memorize subtle noise patterns rather than learning generalizable pneumonia-specific features. We attempted to mitigate this using class weights and augmentation, as well as adding in early stopping, our model still tended to overfit as soon as the backbone was unfrozen. Ultimately, our findings show that with small and highly imbalanced medical datasets, a frozen pretrained model can generalize better than a fine-tuned one, and further tuning can harm performance rather than improve it. -->
+models = ["Baseline", "Fine-Tuned"]
+accuracy = [0.8750, 0.9215]
+precision = [0.8645, 0.9189]
+recall = [0.9487, 0.9590]
+f1 = [0.90465, 0.93852]
 
-Maia Code
-"""
+df = pd.DataFrame({
+    "Model": models,
+    "Accuracy": accuracy,
+    "Precision": precision,
+    "Recall": recall,
+    "F1-Score": f1
+})
 
-# Unfreeze top layers of ResNet50
-# Recompile the model for the trainable changes to take effect
-# Goal: Let the pretrained ResNet50 backbone learn X-ray-specific features
+df_melt = df.melt(id_vars="Model", var_name="Metric", value_name="Value")
 
-# base_model = model.get_layer('resnet50')
-# base_model = model.layers([1])
+sns.barplot(data=df_melt, x="Metric", y="Value", hue="Model")
+plt.ylim(0.85, 1.0)
+plt.legend(title="Model")
+plt.tight_layout()
+plt.show()
 
-for layer in base_model.layers[-30:]:
-    layer.trainable = True
-
-print(f"Total layers in base model: {len(base_model.layers)}")
-print(f"Trainable layers in base model: {sum([1 for layer in base_model.layers if layer.trainable])}")
-
-# Define early stopping callback
-
-early_stopping = EarlyStopping(
-    monitor='val_accuracy',
-    patience=10,
-    restore_best_weights=True
-)
-
-# Recompile for fine-tuning
-
-model.compile(
-    optimizer=Adam(learning_rate=1e-5),
-    loss='binary_crossentropy',
-    metrics=['accuracy', Precision(), Recall()]
-)
-
-history_1 = model.fit(
-    train_generator,
-    epochs=10,
-    validation_data=val_generator,
-    callbacks=[early_stopping]
-)
-
-# SGD with momentum
-
-model.compile(
-    optimizer=SGD(learning_rate=1e-4, momentum=0.9),
-    loss='binary_crossentropy',
-    metrics=['accuracy', Precision(), Recall()]
-)
-
-history_2 = model.fit(
-    train_generator,
-    epochs=10,
-    validation_data=val_generator,
-    callbacks=[early_stopping])
-
-# Adam with L2 regularization
-
-
-base_model_reg = ResNet50(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
-for layer in base_model_reg.layers[-30:]:
-    layer.trainable = True
-
-x = base_model_reg.output
-x = GlobalAveragePooling2D()(x)
-x = Dense(128, activation='relu', kernel_regularizer=regularizers.l2(0.01))(x)
-x = Dropout(0.5)(x)
-predictions = Dense(1, activation='sigmoid', kernel_regularizer=regularizers.l2(0.01))(x)
-
-model_reg = Model(inputs=base_model_reg.input, outputs=predictions)
-
-model_reg.compile(
-    optimizer=Adam(learning_rate=1e-5),
-    loss='binary_crossentropy',
-    metrics=['accuracy', Precision(), Recall()]
-)
-
-history_3 = model_reg.fit(
-    train_generator,
-    epochs=10,
-    validation_data=val_generator,
-    callbacks=[early_stopping]
-)
-
-test_generator.reset()
-y_pred_probs = model_reg.predict(test_generator)
-y_pred = (y_pred_probs > 0.5).astype(int)
-y_true = test_generator.classes
-
-print("Classification Report:")
-print(classification_report(y_true, y_pred, target_names=['NORMAL', 'PNEUMONIA']))
-
-print("\nConfusion Matrix:")
-print(confusion_matrix(y_true, y_pred))
-
-accuracy = accuracy_score(y_true, y_pred)
-precision = precision_score(y_true, y_pred)
-recall = recall_score(y_true, y_pred)
-f1 = f1_score(y_true, y_pred)
-auc = roc_auc_score(y_true, y_pred_probs)
-
-print(f"Accuracy: {accuracy:.4f}")
-print(f"Precision: {precision:.4f}")
-print(f"Recall: {recall:.4f}")
-print(f"F1 Score: {f1:.4f}")
-print(f"AUC-ROC: {auc:.4f}")
+"""Our model did modestly better (increased accuracy by approximately 5%, higher precision, slightly better recall, and an approximately 5% increase in F1-Score), showing the importance of fine-tuning."""
